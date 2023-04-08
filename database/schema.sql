@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS settings (
     max_temperature FLOAT,
     min_water_level FLOAT,
     max_water_level FLOAT,
-    min_pH_level FLOAT,
-    max_pH_level FLOAT
+    pH_level FLOAT,
+    DO_level FLOAT
 );
 
 CREATE TABLE IF NOT EXISTS user_details (
@@ -33,4 +33,19 @@ CREATE TABLE IF NOT EXISTS feeding_schedules (
     feed_amount FLOAT,
     turns FLOAT,
     done_for_the_day BOOLEAN
+);
+
+
+CREATE TABLE IF NOT EXISTS actions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    datetime_added DATETIME,
+    datetime_executed DATETIME NULL,
+
+    motor INT default 0,
+    turns FLOAT,
+    pump INT,
+    sol_in INT,
+    sol_out INT,
+
+    done_executing BOOLEAN
 );

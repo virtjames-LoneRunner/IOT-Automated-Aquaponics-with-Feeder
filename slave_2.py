@@ -22,6 +22,8 @@ read_settings = False
 command_string = ''
 
 previous_time_for_data = datetime.now()
+
+new_commands = False
 try:
     while True:
         # print("LISTENING")
@@ -45,15 +47,17 @@ try:
                 #     input_arduino.write(bytearray([1, 2, 1, 0, 0]))
                 #     print("WRITTEN")
 
-            # input_command = input("COMMAND: ")
-            # command_list = input_command.split(',')
-            # commands = []
-            # for command_ in command_list:
-            #     commands.append(int(command_))
+            input_command = input("COMMAND: ")
+            command_list = input_command.split(',')
+            commands = []
+            for command_ in command_list:
+                commands.append(int(command_))
 
             # input_command = input("COMMAND_prompt: ")
             input_command = 1
-            commands = []
+            # commands = [0, 0, 1, 1, 0]
+
+            # {motor, turns, pump, sol_in, sol_out}
             if input_command:
                 input_arduino.write(bytearray([2]))
                 input_arduino.write(
@@ -76,3 +80,6 @@ except Exception as e:
     log(e)
 
 input_arduino.close()
+
+# except Exception as e:
+#     print(e)
