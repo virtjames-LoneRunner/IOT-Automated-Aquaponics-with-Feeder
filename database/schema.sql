@@ -47,5 +47,7 @@ CREATE TABLE IF NOT EXISTS actions (
     sol_in INT,
     sol_out INT,
 
-    done_executing BOOLEAN
+    done_executing BOOLEAN,
+    remarks VARCHAR(255) NULL,
+    cause VARCHAR(255) NULL
 );

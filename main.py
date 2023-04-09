@@ -53,13 +53,15 @@ try:
                             for i in range(0, len(settings_data)):
                                 settings_data[i] = int(settings_data[i])
 
-                            input_arduino.write(bytearray([settings_data[0], settings_data[1], settings_data[2],
+                            # start at index 1 to skip ID
+                            input_arduino.write(bytearray([settings_data[1], settings_data[2],
                                                            settings_data[3], settings_data[4], settings_data[5],
-                                                           settings_data[6]]))
+                                                           settings_data[6], settings_data[7]]))
 
-                elif len(command_string) == 16:
+                elif 30 > len(command_string) > 10:
                     data = command_string.decode()
-                    # print("SETTINGS: ", data.split(','))
+                    print("SETTINGS: ", data)
+                    data = data.split(',')
                     new_settings = []
                     for i in data:
                         try:
@@ -140,26 +142,42 @@ try:
                     unfinished_actions = dB_cursor.execute(
                         "SELECT * FROM actions WHERE datetime_executed is null").fetchall()
 
+                    # log(f"SETTINGS: {settings_data}")
                     if settings_data and len(unfinished_actions) < 3:
                         # Feeding action
                         feeding_schedule = dB_cursor.execute(
                             "SELECT id, time_scheduled, turns, done_for_the_day FROM feeding_schedules where done_for_the_day = 0").fetchone()
+
+                        if feeding_schedule:
+                            time = feeding_schedule[1].split(':')
+                            current_dateTime = datetime.now()
+                        # ONLY ADD SCHEDULE FOR THE CURRENT HOUR OF THE DAY
+                            if int(time[0]) != current_dateTime.hour:
+                                feeding_schedule = None
+
                         if feeding_schedule:
                             actions['turns'] = feeding_schedule[2]
 
-                        if check_if_pump_needs_on(settings_data, new_data):
-                            actions['pump'] = 1
+                            # UPDATE ROW IN TABLE
+                            dB_cursor.execute(
+                                f"UPDATE feeding_schedules SET done_for_the_day = 1 WHERE id = {feeding_schedule[0]};")
 
-                        sol_in, sol_out = check_if_sols_needs_on(
-                            settings_data, new_data)
+                        action_cause = ''
+                        pump_on, action_cause = check_if_pump_needs_on(
+                            settings_data, new_data, action_cause)
+
+                        actions['pump'] = pump_on
+
+                        sol_in, sol_out, action_cause = check_if_sols_needs_on(
+                            settings_data, new_data, action_cause)
                         actions['sol_in'] = sol_in
                         actions['sol_out'] = sol_out
 
                         # add pump on schedule here as well as corresponding table
                         dB_cursor.execute(f"""
-                            INSERT INTO actions(datetime_added, motor, turns, pump, sol_in, sol_out, done_executing)
+                            INSERT INTO actions(datetime_added, motor, turns, pump, sol_in, sol_out, done_executing, remarks, cause)
                                         VALUES ('{actions['datetime_added']}', {actions['motor']}, {actions['turns']},
-                                                {actions['pump']}, {actions['sol_in']}, {actions['sol_out']}, {0})
+                                                {actions['pump']}, {actions['sol_in']}, {actions['sol_out']}, {0}, 'settings: {settings_data} data: {new_data}', '{action_cause}')
                         """)
 
                     db.commit()
