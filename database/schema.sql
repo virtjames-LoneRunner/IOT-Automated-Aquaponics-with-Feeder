@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS user_details (
     mobile_number VARCHAR(20)
 );
 
+INSERT INTO user_details(mobile_number) VALUES ('+63');
+
 
 CREATE TABLE IF NOT EXISTS feeding_schedules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -59,17 +59,28 @@ def settings():
         return {"settings_data": settings_json}
 
 
-@app.route('/feeding-schedules', methods=['GET', 'POST'])
+@app.route('/feeding-schedules', methods=['GET', 'POST', 'DELETE'])
 @cross_origin()
 def feeding_schedules():
     if request.method == 'POST':
         req = request.json
         settings_data = dB_cursor.execute(
             "SELECT default_feed_amount FROM settings WHERE id = 1").fetchone()
+        turns = float(req['feed_amount']) / settings_data[0]
 
-        print(req, settings_data)
-
+        dB_cursor.execute(f"""INSERT INTO feeding_schedules(time_scheduled, feed_amount, turns, done_for_the_day) 
+                             VALUES ('{req["time_scheduled"]}', {req["feed_amount"]}, {turns}, {0})
+                         """)
+        db.commit()
         return {"settings_data": settings_data}
+
+    elif request.method == "DELETE":
+        sched_id = int(request.args.get('id'))
+
+        dB_cursor.execute(f"DELETE from feeding_schedules WHERE id = {sched_id}")
+        db.commit()
+
+        return {"message" : "DELETED"}
 
     else:
         scheds = dB_cursor.execute(
@@ -78,20 +89,23 @@ def feeding_schedules():
         scheds_json = []
         for sched in scheds:
             scheds_json.append({
-                "id": sched[0], "time_scheduled": sched[1],
+                "id": sched[0], "time_scheduled": (sched[1]),
                 "feed_amount": sched[2], "turns": sched[3],
                 "done_for_the_day": sched[4]
             })
-
-        print(scheds_json)
-        return {"schedules": scheds_json}
+        sorted_scheds = sorted(scheds_json, key=lambda d: d['time_scheduled']) 
+        return {"schedules": sorted_scheds}
 
 
 @app.route('/user-details', methods=['GET', 'POST'])
 @cross_origin()
 def user_details():
     if request.method == 'POST':
-        pass
+        req = request.json
+        dB_cursor.execute(f"""UPDATE user_details SET mobile_number = {req["mobile_number"]} WHERE id = {request.args["id"]}""")
+        db.commit()
+        return {"message": "updated"}
+
     else:
         user_details_data = dB_cursor.execute(
             "SELECT * FROM user_details").fetchone()
@@ -110,14 +124,17 @@ def actions():
     else:
         actions_data = dB_cursor.execute(
             "SELECT * FROM actions ORDER BY id DESC limit 50").fetchall()
-        actions_json = {}
+        actions_json = []
 
         for action in actions_data:
-            actions_json[action[0]] = {
-                "id": action[0], "datetime_added": action[1], "datetime_executed": action[2],
-                "motor": action[3], "turns": action[4], "pump": action[5], "sol_in": action[6], "sol_out": action[7],
-                "done_executing": action[8], "remarks": action[9], "cause": action[10]
-            }
+            try:
+                actions_json.append({
+                    "id": action[0], "datetime_added": action[1], "datetime_executed": action[2],
+                    "motor": action[3], "turns": action[4], "pump": action[5], "sol_in": action[6], "sol_out": action[7],
+                    "done_executing": action[8], "remarks": action[9], "cause": action[10]
+                })
+            except:
+                continue
 
         return {"actions": actions_json}
 

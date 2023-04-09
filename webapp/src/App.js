@@ -1,13 +1,14 @@
-import './App.css';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import "./App.css";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Footer from "./components/Footer";
-import axios from 'axios'
+import axios from "axios";
 
 // Routes
-import Home from './routes/Home';
-import Settings from './routes/Settings';
-import FeedingSchedules from './routes/FeedingSchedules';
-
+import Home from "./routes/Home";
+import Settings from "./routes/Settings";
+import FeedingSchedules from "./routes/FeedingSchedules";
+import UserDetails from "./routes/UserDetails";
+import Actions from "./routes/Actions";
 
 axios.defaults.headers.post["Accept"] = "application/json";
 axios.defaults.headers.post["Content-Type"] = "application/json";
@@ -25,24 +26,24 @@ const router = createBrowserRouter([
     element: <Settings />,
   },
   {
-    path: '/user-details',
-    element: <div className='flex text-white text-2xl items-center h-full justify-center'><h2 className='mb-24'>Coming Soon!</h2></div>
+    path: "/user-details",
+    element: <UserDetails />,
   },
   {
     path: "/actions",
-    element: <div className='flex text-white text-2xl items-center h-full justify-center'><h2 className='mb-24'>Coming Soon!</h2></div>
+    element: <Actions />,
   },
   {
-    path: '/feeding-schedules',
-    element: <FeedingSchedules />
-  }
+    path: "/feeding-schedules",
+    element: <FeedingSchedules />,
+  },
 ]);
 
 function App() {
   return (
     <div className="App flex">
       <div className="bg-[#04080f] h-screen flex-1">
-        <RouterProvider  router={router}/>
+        <RouterProvider router={router} />
         <Footer />
       </div>
     </div>
