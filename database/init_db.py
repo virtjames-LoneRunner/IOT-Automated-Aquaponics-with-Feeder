@@ -5,7 +5,7 @@ import mysql.connector
 # db = sqlite3.connect('database\\main.db')
 db = mysql.connector.connect(
     host="localhost",
-    user="root",
+    user="thesis",
     password="",
     database="automated_aquaponics"
 )

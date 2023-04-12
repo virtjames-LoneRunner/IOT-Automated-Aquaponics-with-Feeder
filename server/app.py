@@ -11,7 +11,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 
 db = mysql.connector.connect(
     host="localhost",
-    user="root",
+    user="thesis",
     password="",
     database="automated_aquaponics",
     connect_timeout=60
