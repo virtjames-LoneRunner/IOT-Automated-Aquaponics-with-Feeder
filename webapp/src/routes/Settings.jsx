@@ -53,7 +53,7 @@ export default function Settings() {
         method="post"
       >
         <div className="bg-indigo-900/10 py-2 px-4">
-          <h2 className="text-left mb-2">Default Feed Amount</h2>
+          <h2 className="text-left mb-2">Default Feed Amount per Screw Feeder Turn</h2>
           <div className="flex items-center space-x-2">
             <input
               onChange={handleInput}

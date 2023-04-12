@@ -1,14 +1,21 @@
-import sqlite3
+# import sqlite3
+import mysql.connector
 import serial
 import time
 from datetime import datetime
 from datetime import timedelta
-from log import log
+import traceback
 
 from checks import check_if_pump_needs_on, check_if_sols_needs_on
+from log import log
 
-db = sqlite3.connect('database/main.db')
-dB_cursor = db.cursor()
+db = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="",
+    database="automated_aquaponics"
+)
+dB_cursor = db.cursor(buffered=True)
 
 
 input_arduino = serial.Serial('COM4', 9600)
@@ -40,9 +47,9 @@ try:
                 if len(command_string) == 3:
                     command_string = int(command_string)
                     if command_string == 1:
-                        settings_data = dB_cursor.execute(
-                            "SELECT * FROM settings;").fetchone()
-
+                        dB_cursor.execute(
+                            "SELECT * FROM settings;")
+                        settings_data = dB_cursor.fetchone()
                         now = datetime.now()
                         input_arduino.write(bytearray([1]))
                         input_arduino.write(bytearray([now.minute, now.hour]))
@@ -60,7 +67,7 @@ try:
 
                 elif 30 > len(command_string) > 10:
                     data = command_string.decode()
-                    print("SETTINGS: ", data)
+                    # print("SETTINGS: ", data)
                     data = data.split(',')
                     new_settings = []
                     for i in data:
@@ -70,10 +77,11 @@ try:
                             continue
                     log(f"SETTINGS: {new_settings}")
 
-                    settings_data = dB_cursor.execute(
-                        "SELECT * FROM settings;").fetchone()
+                    dB_cursor.execute(
+                        "SELECT * FROM settings;")
+                    settings_data = dB_cursor.fetchone()
 
-                    log(settings_data)
+                    log(f"SETTINGS DATA: {settings_data}")
                     if not settings_data:
                         dB_cursor.execute(
                             f"""INSERT INTO settings(default_feed_amount, min_temperature, max_temperature,
@@ -102,11 +110,12 @@ try:
                             new_data.append(float(i))
                         except:
                             continue
-                    log(new_data)
+                    log(f"NEW DATA: {new_data}")
 
                     # CHECK if action needs to be taken
-                    settings_data = dB_cursor.execute(
-                        "SELECT * FROM settings;").fetchone()
+                    dB_cursor.execute(
+                        "SELECT * FROM settings;")
+                    settings_data = dB_cursor.fetchone()
                     if settings_data:
                         # input_arduino.write(bytearray([2]))
                         settings_data = list(settings_data)
@@ -139,17 +148,19 @@ try:
                     actions = {"datetime_added": current_dateTime, "datetime_executed": None,
                                "motor": 0, "turns": 0, "pump": 0, "sol_in": 0, "sol_out": 0}
 
-                    unfinished_actions = dB_cursor.execute(
-                        "SELECT * FROM actions WHERE datetime_executed is null").fetchall()
+                    dB_cursor.execute(
+                        "SELECT * FROM actions WHERE datetime_executed is null")
+                    unfinished_actions = dB_cursor.fetchall()
 
                     # log(f"SETTINGS: {settings_data}")
                     if settings_data and len(unfinished_actions) < 3:
                         # Feeding action
-                        feeding_schedule = dB_cursor.execute(
-                            "SELECT id, time_scheduled, turns, done_for_the_day FROM feeding_schedules where done_for_the_day = 0").fetchone()
+                        dB_cursor.execute(
+                            "SELECT id, time_scheduled, turns, done_for_the_day FROM feeding_schedules where done_for_the_day = 0")
 
+                        feeding_schedule = dB_cursor.fetchone()
                         if feeding_schedule:
-                            time = feeding_schedule[1].split(':')
+                            time = str(feeding_schedule[1]).split(':')
                             current_dateTime = datetime.now()
                         # ONLY ADD SCHEDULE FOR THE CURRENT HOUR OF THE DAY
                             if int(time[0]) != current_dateTime.hour:
@@ -185,10 +196,13 @@ try:
 
             # change command_string back to a string
             command_string = ''
+        # except InternalError:
+        #     dB_cursor.fetchall()
 
         except Exception as error:
-            log(error)
+            log(traceback.print_exc())
 
+        command_string = ''
 
 except KeyboardInterrupt:
     log("ERROR OCCURED")

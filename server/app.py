@@ -1,20 +1,30 @@
 from flask import Flask, request
-import sqlite3
+import mysql.connector
+# import sqlite3
 from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
-db = sqlite3.connect('../database/main.db', check_same_thread=False)
+# db = sqlite3.connect('../database/main.db', check_same_thread=False)
+
+db = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="",
+    database="automated_aquaponics",
+    connect_timeout=60
+)
 dB_cursor = db.cursor()
 
 
 @app.route("/dashboard")
 @cross_origin()
 def dashboard():
-    data = dB_cursor.execute(
-        "SELECT * FROM data_rows ORDER BY id DESC").fetchone()
+    dB_cursor.execute(
+        "SELECT * FROM data_rows ORDER BY id DESC LIMIT 0, 1")
+    data = dB_cursor.fetchone()
 
     data_json = {
         "id": data[0], "date_time": data[1],
@@ -22,7 +32,7 @@ def dashboard():
         "water_level": data[4], "humidity": data[5],
         "dissolved_oxygen": data[6]
     }
-
+    db.commit()
     return {"message": "", "data": data_json}
 
 
@@ -34,9 +44,9 @@ def settings():
         # print(request.json)
         try:
             req = request.json
-            dB_cursor.execute(f"""UPDATE settings SET 
-                                    default_feed_amount = {req['default_feed_amount']}, min_temperature = {req['min_temperature']}, max_temperature = {req['max_temperature']}, 
-                                    min_water_level = {req['min_water_level']}, max_water_level = {req['max_water_level']}, pH_level = {req['pH_level']}, 
+            dB_cursor.execute(f"""UPDATE settings SET
+                                    default_feed_amount = {req['default_feed_amount']}, min_temperature = {req['min_temperature']}, max_temperature = {req['max_temperature']},
+                                    min_water_level = {req['min_water_level']}, max_water_level = {req['max_water_level']}, pH_level = {req['pH_level']},
                                     DO_level = {req['DO_level']}
                                 WHERE id = {req['id']}""")
             db.commit()
@@ -47,8 +57,9 @@ def settings():
             return {"message": f'An error occured: {e}'}
 
     else:
-        settings_data = dB_cursor.execute(
-            "SELECT * FROM settings WHERE id = 1").fetchone()
+        dB_cursor.execute(
+            "SELECT * FROM settings WHERE id = 1")
+        settings_data = dB_cursor.fetchone()
         settings_json = {
             "id": settings_data[0], "default_feed_amount": settings_data[1],
             "min_temperature": settings_data[2], "max_temperature": settings_data[3],
@@ -64,12 +75,14 @@ def settings():
 def feeding_schedules():
     if request.method == 'POST':
         req = request.json
-        settings_data = dB_cursor.execute(
-            "SELECT default_feed_amount FROM settings WHERE id = 1").fetchone()
+        dB_cursor.execute(
+            "SELECT default_feed_amount FROM settings WHERE id = 1")
+        settings_data = dB_cursor.fetchone()
         turns = float(req['feed_amount']) / settings_data[0]
 
-        dB_cursor.execute(f"""INSERT INTO feeding_schedules(time_scheduled, feed_amount, turns, done_for_the_day) 
-                             VALUES ('{req["time_scheduled"]}', {req["feed_amount"]}, {turns}, {0})
+        dB_cursor.execute(f"""INSERT INTO feeding_schedules(time_scheduled, feed_amount, turns, done_for_the_day)
+                             VALUES ('{req["time_scheduled"]}', {
+                                     req["feed_amount"]}, {turns}, {0})
                          """)
         db.commit()
         return {"settings_data": settings_data}
@@ -77,38 +90,52 @@ def feeding_schedules():
     elif request.method == "DELETE":
         sched_id = int(request.args.get('id'))
 
-        dB_cursor.execute(f"DELETE from feeding_schedules WHERE id = {sched_id}")
+        dB_cursor.execute(
+            f"DELETE from feeding_schedules WHERE id = {sched_id}")
         db.commit()
 
-        return {"message" : "DELETED"}
+        return {"message": "DELETED"}
 
     else:
-        scheds = dB_cursor.execute(
-            "SELECT * FROM feeding_schedules").fetchall()
-
+        try:
+            dB_cursor.execute(
+                "SELECT * FROM feeding_schedules ORDER BY time_scheduled DESC")
+        except mysql.connector.errors.OperationalError as e:
+            print("Lost connection to MySQL server during query. Retrying...")
+            db.reconnect(attempts=3, delay=5)
+        scheds = dB_cursor.fetchall()
+        # sorted_scheds = []
+        print(scheds)
         scheds_json = []
-        for sched in scheds:
-            scheds_json.append({
-                "id": sched[0], "time_scheduled": (sched[1]),
-                "feed_amount": sched[2], "turns": sched[3],
-                "done_for_the_day": sched[4]
-            })
-        sorted_scheds = sorted(scheds_json, key=lambda d: d['time_scheduled']) 
-        return {"schedules": sorted_scheds}
+        if scheds:
+            for sched in scheds:
+                scheds_json.append({
+                    "id": sched[0], "time_scheduled": str(sched[1]),
+                    "feed_amount": sched[2], "turns": sched[3],
+                    "done_for_the_day": sched[4]
+                })
+            # sorted_scheds = sorted(
+            #     scheds_json, key=lambda d: d['time_scheduled'])
+        else:
+            scheds_json = []
+        db.commit()
+        return {"schedules": scheds_json}
 
 
-@app.route('/user-details', methods=['GET', 'POST'])
-@cross_origin()
+@ app.route('/user-details', methods=['GET', 'POST'])
+@ cross_origin()
 def user_details():
     if request.method == 'POST':
         req = request.json
-        dB_cursor.execute(f"""UPDATE user_details SET mobile_number = {req["mobile_number"]} WHERE id = {request.args["id"]}""")
+        dB_cursor.execute(
+            f"""UPDATE user_details SET mobile_number = {req["mobile_number"]} WHERE id = {request.args["id"]}""")
         db.commit()
         return {"message": "updated"}
 
     else:
-        user_details_data = dB_cursor.execute(
-            "SELECT * FROM user_details").fetchone()
+        dB_cursor.execute(
+            "SELECT * FROM user_details")
+        user_details_data = dB_cursor.fetchone()
         user_json = {
             "id": user_details_data[0],
             "mobile_number": user_details_data[1]
@@ -116,14 +143,21 @@ def user_details():
         return {"user_details": user_json}
 
 
-@app.route('/actions', methods=['GET', 'POST'])
-@cross_origin()
+@ app.route('/actions', methods=['GET', 'POST'])
+@ cross_origin()
 def actions():
     if request.method == 'POST':
         pass
     else:
-        actions_data = dB_cursor.execute(
-            "SELECT * FROM actions ORDER BY id DESC limit 50").fetchall()
+
+        try:
+            dB_cursor.execute(
+                "SELECT * FROM actions ORDER BY id DESC limit 50")
+        except mysql.connector.errors.OperationalError as e:
+            print("Lost connection to MySQL server during query. Retrying...")
+            db.reconnect(attempts=3, delay=5)
+
+        actions_data = dB_cursor.fetchall()
         actions_json = []
 
         for action in actions_data:

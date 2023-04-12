@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS data_rows (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
     date_time DATETIME,
     temperature FLOAT,
     pH_level FLOAT,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS data_rows (
 
 
 CREATE TABLE IF NOT EXISTS settings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
 
     default_feed_amount FLOAT,
     min_temperature FLOAT,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 
 CREATE TABLE IF NOT EXISTS user_details (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
     mobile_number VARCHAR(20)
 );
 
@@ -30,7 +30,7 @@ INSERT INTO user_details(mobile_number) VALUES ('+63');
 
 
 CREATE TABLE IF NOT EXISTS feeding_schedules (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
     time_scheduled TIME,
     feed_amount FLOAT,
     turns FLOAT,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS feeding_schedules (
 
 
 CREATE TABLE IF NOT EXISTS actions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
     datetime_added DATETIME,
     datetime_executed DATETIME NULL,
 

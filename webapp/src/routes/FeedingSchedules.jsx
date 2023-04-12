@@ -40,19 +40,9 @@ export default function FeedingSchedules() {
         <h2 className="text-xl">Feeding Schedules</h2>
       </div>
       <div className="mt-12 h-5/6 px-5 pt-4 pb-9 flex flex-col justify-between">
-        <div className="h-full overflow-y-auto">
-          {feedingSchedules.map((sched) => (
-            <FeedingSchedule
-              key={sched.id}
-              sched={sched}
-              setUpdateCount={setUpdateCount}
-              updateCount={updateCount}
-            />
-          ))}
-        </div>
         <form
           onSubmit={handleAddSchedule}
-          className="bg-indigo-900/10 py-2 px-4 text-left space-y-3"
+          className="bg-indigo-900/10 py-2 px-4 text-left space-y-3 mb-5"
         >
           <div className="flex flex-col space-y-1">
             <h2>Time:</h2>
@@ -84,6 +74,16 @@ export default function FeedingSchedules() {
             </button>
           </div>
         </form>
+        <div className="h-full overflow-y-auto">
+          {feedingSchedules.map((sched) => (
+            <FeedingSchedule
+              key={sched.id}
+              sched={sched}
+              setUpdateCount={setUpdateCount}
+              updateCount={updateCount}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

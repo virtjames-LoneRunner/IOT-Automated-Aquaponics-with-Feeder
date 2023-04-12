@@ -1,12 +1,21 @@
-import sqlite3
+# import sqlite3
+import mysql.connector
 import serial
 import time
 from datetime import datetime
 from datetime import timedelta
 from log import log
 
-db = sqlite3.connect('database/main.db')
-dB_cursor = db.cursor()
+db = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="",
+    database="automated_aquaponics",
+    connect_timeout=60,
+    raise_on_warnings=True,
+)
+
+dB_cursor = db.cursor(buffered=True)
 
 
 input_arduino = serial.Serial('COM3', 9600)
@@ -24,30 +33,18 @@ command_string = ''
 previous_time_for_data = datetime.now()
 
 new_commands = False
+count = 0
 # try:
+log("INITIALIZING")
+time.sleep(4)
 while True:
     while input_arduino.in_waiting:
         command_string = input_arduino.readline()
-        # print("COMMAND: ", command_string)
-    # try:
-    # if command_string:
-        # log(f"LENGTH: {len(command_string)}")
-        # log(f"COMMAND: {command_string}")
-
-    # input_command = input("COMMAND: ")
-    # command_list = input_command.split(',')
-    # commands = []
-    # for command_ in command_list:
-    #     commands.append(int(command_))
-
-    # input_command = input("COMMAND_prompt: ")
-    # input_command = 1
-    # commands = [0, 0, 1, 1, 0]
-
-    action_to_execute = dB_cursor.execute("""SELECT id, datetime_added, datetime_executed, 
-                                                motor, turns, pump, 
-                                                sol_in, sol_out, done_executing 
-                                        FROM actions WHERE done_executing = 0""").fetchone()
+    dB_cursor.execute("""SELECT id, datetime_added, datetime_executed,
+                                motor, turns, pump,
+                                sol_in, sol_out, done_executing
+                            FROM actions WHERE done_executing = 0""")
+    action_to_execute = dB_cursor.fetchone()
 
     # {motor, turns, pump, sol_in, sol_out}
     if action_to_execute:
@@ -57,24 +54,18 @@ while True:
         input_arduino.write(
             bytearray([action_to_execute[3], int(action_to_execute[4]), action_to_execute[5],
                        action_to_execute[6], action_to_execute[7]]))
-        # input_arduino.write(bytearray([0, 0, 1, 1, 0]))
-
-        # update action record
-        # print(f"""UPDATE actions SET datetime_executed = '{executed_at}', done_executing = 1
-        #                         WHERE id = {action_to_execute[0]};
-        #     """)
         dB_cursor.execute(f"""UPDATE actions SET datetime_executed = '{executed_at}', done_executing = 1
                                 WHERE id = {action_to_execute[0]};                  
             """)
 
-        db.commit()
-    # input_arduino.write(bytearray([1]))
+    db.commit()
+    # time.sleep(0.25)
 
-# except Exception as error:
-#     log(error)
+    # except Exception as error:
+    #     log(error)
 
-# change command_string back to a string
-command_string = ''
+    # change command_string back to a string
+    command_string = ''
 
 
 # except KeyboardInterrupt:
