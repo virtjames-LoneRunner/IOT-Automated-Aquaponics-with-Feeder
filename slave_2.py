@@ -6,6 +6,8 @@ from datetime import datetime
 from datetime import timedelta
 from log import log
 
+# allow time to initialize
+time.sleep(5)
 db = mysql.connector.connect(
     host="localhost",
     user="thesis",
@@ -18,7 +20,19 @@ db = mysql.connector.connect(
 dB_cursor = db.cursor(buffered=True)
 
 
-input_arduino = serial.Serial('COM3', 9600)
+
+f = open('/home/raspberry/thesis/slave_log.txt', 'a')
+
+f.write("STARTED")
+try:
+#    input_arduino = serial.Serial('/dev/ttyACM0', 9600)
+    input_arduino = serial.Serial('/dev/ttyACM1', 9600)
+except Exception as e:
+    f.write(e)
+
+f.write("ARDUINO LOADED")
+
+
 # output_arduino = serial.Serial('COM11', 9600)
 
 input_data = []
